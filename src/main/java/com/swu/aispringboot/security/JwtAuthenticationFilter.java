@@ -13,6 +13,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Resource
     private UserService userService;
@@ -40,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 1.提取token
         String token = JwtTokenUtil.extractTokenFromRequest(request);
         if (!StringUtils.hasText(token)) {
+            log.info("未携带token, uri={}", request.getRequestURI());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.ACCESS_UNAUTHORIZED);
             return;
@@ -49,16 +52,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             validationResult = JwtTokenUtil.validateToken(token);
         }catch (TokenExpiredException e){
+            log.info("token过期, uri={}", request.getRequestURI());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.TOKEN_EXPIRED);
             return;
         }catch (JWTVerificationException e){
+            log.warn("token校验失败, uri={}, reason={}", request.getRequestURI(), e.getMessage());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.TOKEN_INVALID);
             return;
         }
-        // 3.claim不完整或无效
+        // 3.token中claim不完整或无效
         if (validationResult == null || !validationResult.isValid()) {
+            log.warn("token缺少必要claim：userId/roleType/username, uri={}", request.getRequestURI());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.TOKEN_INVALID);
             return;
@@ -68,12 +74,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             user = userService.getUserById(validationResult.getUserId());
         }catch (BusinessException e){
+            log.warn("token中用户不存在, userId={}, uri={}", validationResult.getUserId(), request.getRequestURI());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.TOKEN_ACCESS_FORBIDDEN);
             return;
         }
-
         if (user == null || !UserStatus.NORMAL.getCode().equals(user.getStatus())) {
+            log.info("用户状态异常,拒绝访问 userId={}, uri={}", validationResult.getUserId(), request.getRequestURI());
             clearSecurityContext();
             ResponseUtil.writeError(response, ResultCode.TOKEN_ACCESS_FORBIDDEN);
             return;

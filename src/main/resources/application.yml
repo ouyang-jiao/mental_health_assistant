@@ -26,3 +26,10 @@ jwt:
   refresh-expiration: 604800000 #7天(毫秒)
   header: Authorization # token头部名称
   token-prefix: "Bearer " # token ff%
+
+logging:
+  level:
+    com.swu.aispringboot: info      # 本项目根包，只调本项目的日志级别
+  file:
+    name: logs/ai-springboot.log    # 相对项目根目录，会同时打到控制台和文件
+    
