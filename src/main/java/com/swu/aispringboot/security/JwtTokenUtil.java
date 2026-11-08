@@ -1,4 +1,4 @@
-package com.swu.aispringboot.module.security;
+package com.swu.aispringboot.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;

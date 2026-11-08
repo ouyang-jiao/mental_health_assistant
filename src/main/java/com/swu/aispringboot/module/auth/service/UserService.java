@@ -9,7 +9,7 @@ import com.swu.aispringboot.module.auth.dto.UserLoginResponseDTO;
 import com.swu.aispringboot.module.auth.entity.User;
 import com.swu.aispringboot.exception.BusinessException;
 import com.swu.aispringboot.module.auth.mapper.UserMapper;
-import com.swu.aispringboot.module.security.JwtTokenUtil;
+import com.swu.aispringboot.security.JwtTokenUtil;
 import jakarta.annotation.Resource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.swu.aispringboot.module.security;
+package com.swu.aispringboot.security;
 
 import com.swu.aispringboot.common.ResultCode;
 import com.swu.aispringboot.config.SecurityConfig;

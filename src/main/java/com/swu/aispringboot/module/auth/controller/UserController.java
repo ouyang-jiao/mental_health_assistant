@@ -1,13 +1,12 @@
 package com.swu.aispringboot.module.auth.controller;
 
-
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.swu.aispringboot.module.auth.dto.UserLoginCommandDTO;
 import com.swu.aispringboot.module.auth.dto.UserRegisterCommandDTO;
 import com.swu.aispringboot.module.auth.dto.UserLoginResponseDTO;
 import com.swu.aispringboot.common.Result;
 import com.swu.aispringboot.module.auth.service.UserService;
-import com.swu.aispringboot.module.security.JwtTokenUtil;
+import com.swu.aispringboot.security.JwtTokenUtil;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;

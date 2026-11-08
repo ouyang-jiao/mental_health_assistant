@@ -7,7 +7,7 @@ import com.swu.aispringboot.common.Result;
 import com.swu.aispringboot.common.ResultCode;
 import com.swu.aispringboot.module.chat.dto.ConsultationSessionCreateDTO;
 import com.swu.aispringboot.module.chat.dto.ConsultationStreamDTO;
-import com.swu.aispringboot.module.security.JwtTokenUtil;
+import com.swu.aispringboot.security.JwtTokenUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
