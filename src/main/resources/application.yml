@@ -32,4 +32,6 @@ logging:
     com.swu.aispringboot: info      # 本项目根包，只调本项目的日志级别
   file:
     name: logs/ai-springboot.log    # 相对项目根目录，会同时打到控制台和文件
-    
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{traceId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{traceId}] %logger{36} - %msg%n"

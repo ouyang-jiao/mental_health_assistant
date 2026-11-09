@@ -19,6 +19,7 @@ public class ResponseUtil {
             case UNAUTHORIZED, ACCESS_UNAUTHORIZED, TOKEN_INVALID, TOKEN_EXPIRED, TOKEN_BLOCKED ->
                     HttpStatus.UNAUTHORIZED.value();
             case TOKEN_ACCESS_FORBIDDEN -> HttpStatus.FORBIDDEN.value();
+            case AUTHORIZED_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR.value();
             default -> HttpStatus.BAD_REQUEST.value();
         };
         response.setStatus(status);
