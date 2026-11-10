@@ -61,11 +61,20 @@ public class JwtTokenUtil implements ApplicationContextAware {
         if (request == null){
             return null;
         }
-        String tokenHeader = request.getHeader("token");
-        if (StringUtils.hasText(tokenHeader)){
-            return tokenHeader;
+        JwtConfig jwtConfig = getJwtConfig();
+
+        if (!StringUtils.hasText(jwtConfig.getHeader())) {
+            throw new IllegalArgumentException("jwt.header未配置,请检查application.yml");
         }
-        return null;
+        String rawToken = request.getHeader(jwtConfig.getHeader());
+        if (!StringUtils.hasText(rawToken)){
+            return null;
+        }
+        String prefix = jwtConfig.getTokenPrefix();
+        if(StringUtils.hasText(prefix) && rawToken.startsWith(prefix)){
+            return rawToken.substring(prefix.length()).trim();
+        }
+        return rawToken.trim();
     }
 
     //获取当前token
