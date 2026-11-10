@@ -1,5 +1,6 @@
 package com.swu.aispringboot.module.chat.service;
 
+import com.swu.aispringboot.exception.BusinessException;
 import com.swu.aispringboot.module.ai.PromptManage;
 import com.swu.aispringboot.module.ai.StructOutPut;
 import com.swu.aispringboot.module.chat.dto.ConsultationSessionCreateDTO;
@@ -41,8 +42,7 @@ public class PsychologicalSupportService {
         ConsultationSession consultationSession = consultationSessionService.createSession(userId, consultationSessionCreateDTO);
         //将初始用户消息保存到Message表
         ConsultationMessage userMessage = consultationMessageService.saveUserMessage(consultationSession.getId(), consultationSessionCreateDTO.getInitialMessage(), null);
-        //创建会话信息
-        String sessionId = "session_" + consultationSession.getId();
+        Long sessionId = consultationSession.getId();
         return new StructOutPut.StreamChatSession(
                 sessionId,
                 userId,
@@ -53,31 +53,32 @@ public class PsychologicalSupportService {
                 "ACTIVE");
     }
 
-    public Flux<String> streamPsychologicalChat(String sessionId, String userMessage) {
+    public Flux<String> streamPsychologicalChat(Long userId, Long sessionId, String userMessage) {
         //创建响应流
         return Flux.create(sink -> {
-            Long dbSessionId = extractSessionId(sessionId);
-            if (dbSessionId == null) {
-                sink.error(new RuntimeException("会话ID格式错误"));
+            //先校验归属
+            try {
+                ConsultationSession consultationSession = consultationSessionService.assertSessionOwner(sessionId, userId);
+            } catch (BusinessException e) {
+                sink.error(e);
                 return;
             }
             //是否为初始消息
             boolean isInitialMessage = false;
             //检查会话是否存在
-            Integer messageCount = consultationMessageService.getMessageCountBySessionId(dbSessionId);
+            Integer messageCount = consultationMessageService.getMessageCountBySessionId(sessionId);
             if (messageCount == 1) {
-                ConsultationMessageResponseDTO lastMessage = consultationMessageService.getLastMessageBySessionId(dbSessionId);
+                ConsultationMessageResponseDTO lastMessage = consultationMessageService.getLastMessageBySessionId(sessionId);
                 if (lastMessage != null && lastMessage.getSenderType() == 1 && userMessage.equals(lastMessage.getContent())) {
                     isInitialMessage = true;
                 }
             }
             if (!isInitialMessage) {
                 //保存用户信息到数据库
-                consultationMessageService.saveUserMessage(dbSessionId, userMessage, null);
+                consultationMessageService.saveUserMessage(sessionId, userMessage, null);
             }
             //进行流式对话
-            //生成对话记忆管理
-            String conversationId = "conversation_" + sessionId;
+            String conversationId = String.valueOf(sessionId);
             //构建系统提示词
             List<Message> userMessages = new ArrayList<>();
             userMessages.add(new UserMessage(userMessage));
@@ -99,7 +100,7 @@ public class PsychologicalSupportService {
                     })
                     .doOnComplete(() -> {
                         //将AI返回的内容保存到数据库
-                        consultationMessageService.saveAiMessage(dbSessionId, fullResponse.toString(), "open-ai");
+                        consultationMessageService.saveAiMessage(sessionId, fullResponse.toString(), "open-ai");
                         //添加ai回复到对话记忆
                         List<Message> aiMessages = new ArrayList<>();
                         aiMessages.add(new AssistantMessage(fullResponse.toString()));
@@ -113,13 +114,5 @@ public class PsychologicalSupportService {
 
         });
 
-    }
-
-    //获取参数中的sessionId
-    public Long extractSessionId(String sessionId) {
-        if (sessionId != null && sessionId.startsWith("session_")) {
-            return Long.parseLong(sessionId.substring("session_".length()));
-        }
-        return null;
     }
 }

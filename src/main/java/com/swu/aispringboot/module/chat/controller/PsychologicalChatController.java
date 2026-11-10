@@ -43,7 +43,7 @@ public class PsychologicalChatController {
                     .data(JSONUtil.toJsonStr(Result.error(ResultCode.UNAUTHORIZED.getCode(),ResultCode.UNAUTHORIZED.getMsg(), "用户未登录")))
                     .build());
         }
-        return psychologicalSupportService.streamPsychologicalChat(consultationStreamDTO.getSessionId(), consultationStreamDTO.getUserMessage())
+        return psychologicalSupportService.streamPsychologicalChat(userId, consultationStreamDTO.getSessionId(), consultationStreamDTO.getUserMessage())
                 .map(Fragment -> {
                     return ServerSentEvent.<String>builder()
                             .event("message")

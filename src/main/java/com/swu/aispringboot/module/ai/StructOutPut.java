@@ -3,7 +3,7 @@ package com.swu.aispringboot.module.ai;
 
 public class StructOutPut {
     public record StreamChatSession(
-            String sessionId,
+            Long sessionId,
             Long userHash,
             String initialMessage,
             Long startTime,

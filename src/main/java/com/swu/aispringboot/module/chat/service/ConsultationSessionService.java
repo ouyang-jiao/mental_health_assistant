@@ -2,6 +2,7 @@ package com.swu.aispringboot.module.chat.service;
 
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.swu.aispringboot.exception.BusinessException;
 import com.swu.aispringboot.module.chat.dto.ConsultationSessionCreateDTO;
 import com.swu.aispringboot.module.chat.entity.ConsultationSession;
 import com.swu.aispringboot.module.auth.entity.User;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 public class ConsultationSessionService {
@@ -39,5 +41,15 @@ public class ConsultationSessionService {
             return consultationSession;
         }
         return null;
+    }
+
+    //归属校验
+    public ConsultationSession assertSessionOwner(Long sessionId, Long userId) {
+        //根据会话ID查询会话是否存在
+        ConsultationSession consultationSession = consultationSessionMapper.selectById(sessionId);
+        if (consultationSession == null || !Objects.equals(consultationSession.getUserId(), userId)) {
+            throw new BusinessException("会话不存在或无访问权限");
+        }
+        return consultationSession;
     }
 }
