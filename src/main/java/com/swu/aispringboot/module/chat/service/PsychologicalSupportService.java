@@ -35,8 +35,11 @@ public class PsychologicalSupportService {
     @Autowired
     private ConsultationMessageService consultationMessageService;
 
-    @Value("${chat.history.max-messages:20}")
+    @Value("${chat.history.max-messages:50}")
     private int maxHistoryMessages;
+
+    @Value("${chat.history.max-tokens:3000}")
+    private int maxTokens;
 
     public StructOutPut.StreamChatSession startSession(Long userId, ConsultationSessionCreateDTO consultationSessionCreateDTO) {
         //创建数据库会话记录
@@ -85,7 +88,7 @@ public class PsychologicalSupportService {
             StringBuilder fullResponse = new StringBuilder();
 
             List<Message> historyMessages = new ArrayList<>();
-            for(ConsultationMessage message : consultationMessageService.getRecentMessages(sessionId, maxHistoryMessages)){
+            for(ConsultationMessage message : consultationMessageService.getRecentMessages(sessionId, maxHistoryMessages, maxTokens)){
                 historyMessages.add(SenderType.USER.getCode().equals(message.getSenderType())
                         ? new UserMessage(message.getContent())
                         : new AssistantMessage(message.getContent()));

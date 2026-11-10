@@ -21,7 +21,8 @@ spring:
 
 chat:
   history:
-    max-messages: 20
+    max-messages: 500
+    max-tokens: 6000
 
 # JWT配置
 jwt:
@@ -34,6 +35,7 @@ jwt:
 logging:
   level:
     com.swu.aispringboot: info      # 本项目根包，只调本项目的日志级别
+    org.springframework.ai.chat.client: debug
   file:
     name: logs/ai-springboot.log    # 相对项目根目录，会同时打到控制台和文件
   pattern:

@@ -6,14 +6,16 @@ import com.swu.aispringboot.module.chat.enums.SenderType;
 import com.swu.aispringboot.module.chat.dto.ConsultationMessageResponseDTO;
 import com.swu.aispringboot.module.chat.entity.ConsultationMessage;
 import com.swu.aispringboot.module.chat.mapper.ConsultationMessageMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @Service
 public class ConsultationMessageService {
     @Autowired
@@ -80,14 +82,44 @@ public class ConsultationMessageService {
         return dto;
     }
 
-    public List<ConsultationMessage> getRecentMessages(Long sessionId, int limit) {
+    public List<ConsultationMessage> getRecentMessages(Long sessionId, int maxMessages, int maxTokens) {
+        //先按条数粗筛选，多取一些作为候选消息
         LambdaQueryWrapper<ConsultationMessage> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ConsultationMessage::getSessionId, sessionId)
                 .orderByDesc(ConsultationMessage::getId)
-                .last("limit " + limit);
-        List<ConsultationMessage> messages = consultationMessageMapper.selectList(queryWrapper);
-        //反转消息列表，确保最新消息在最前面
-        Collections.reverse(messages);
-        return messages;
+                .last("limit " + maxMessages);
+        List<ConsultationMessage> candidateMessages = consultationMessageMapper.selectList(queryWrapper);
+
+        //从新往旧累加token数，直到超过maxTokens
+        List<ConsultationMessage> window = new ArrayList<>();
+        int usedTokens = 0;
+        for (ConsultationMessage message : candidateMessages) {
+            int cost = estimateTokenCost(message.getContent());
+            if(!window.isEmpty() && usedTokens + cost > maxTokens) {
+                break;
+            }
+            window.add(message);
+            usedTokens += cost;
+        }
+        Collections.reverse(window);
+        log.info("session={}, 候选={}, 窗口={}, 估算token={}, 预算={}",
+                sessionId, candidateMessages.size(), window.size(), usedTokens, maxTokens);
+        return window;
+    }
+
+    private int estimateTokenCost(String content) {
+        if(content == null || content.isEmpty()) {
+            return 0;
+        }
+        int ascii = 0;
+        int other = 0;
+        for (int i = 0; i < content.length(); i++) {
+            if(content.charAt(i) < 128) {
+                ascii++;
+            } else {
+                other++;
+            }
+        }
+        return ascii/4 + other + 1;
     }
 }
