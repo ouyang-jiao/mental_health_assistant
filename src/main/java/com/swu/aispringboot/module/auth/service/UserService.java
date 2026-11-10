@@ -52,7 +52,6 @@ public class UserService {
     }
 
     public UserLoginResponseDTO.UserDetailResponseDTO register(UserRegisterCommandDTO userRegisterCommandDTO) {
-        //System.out.println(JSONUtil.parseObj(userRegisterCommandDTO));
         //验证密码是否一致
         if(!userRegisterCommandDTO.getPassword().equals(userRegisterCommandDTO.getConfirmPassword())){
             throw new BusinessException("两次输入密码不一致");
@@ -68,10 +67,6 @@ public class UserService {
         EmailQueryWrapper.eq(User::getEmail, userRegisterCommandDTO.getEmail());
         if (userMapper.selectCount(EmailQueryWrapper) > 0) {
             throw new BusinessException("邮箱已注册");
-        }
-        //用户类型
-        if (!UserType.isValidCode(userRegisterCommandDTO.getUserType())) {
-            throw new BusinessException("用户类型无效");
         }
         //创建用户实体对象
         User user = UserConvert.registerCommandToEntity(userRegisterCommandDTO, bCryptPasswordEncoder.encode(userRegisterCommandDTO.getPassword().trim()));

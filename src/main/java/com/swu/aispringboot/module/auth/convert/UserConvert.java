@@ -4,6 +4,7 @@ import com.swu.aispringboot.module.auth.dto.UserRegisterCommandDTO;
 import com.swu.aispringboot.module.auth.dto.UserLoginResponseDTO;
 import com.swu.aispringboot.module.auth.entity.User;
 import com.swu.aispringboot.module.auth.enums.UserStatus;
+import com.swu.aispringboot.module.auth.enums.UserType;
 
 import java.time.LocalDateTime;
 
@@ -47,7 +48,7 @@ public class UserConvert {
                 .nickname(userRegisterCommandDTO.getNickname())
                 .gender(userRegisterCommandDTO.getGender())
                 .birthday(userRegisterCommandDTO.getBirthday())
-                .userType(userRegisterCommandDTO.getUserType())
+                .userType(UserType.USER.getCode())
                 .status(UserStatus.NORMAL.getCode())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())

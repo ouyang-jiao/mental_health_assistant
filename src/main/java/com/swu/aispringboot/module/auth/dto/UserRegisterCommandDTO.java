@@ -30,6 +30,5 @@ public class UserRegisterCommandDTO {
     private String confirmPassword;
 
     private Integer gender;
-    private Integer userType = 1;
     private LocalDate birthday;
 }
