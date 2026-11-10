@@ -7,8 +7,8 @@ import com.swu.aispringboot.module.chat.dto.ConsultationSessionCreateDTO;
 import com.swu.aispringboot.module.chat.dto.ConsultationMessageResponseDTO;
 import com.swu.aispringboot.module.chat.entity.ConsultationMessage;
 import com.swu.aispringboot.module.chat.entity.ConsultationSession;
+import com.swu.aispringboot.module.chat.enums.SenderType;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -16,6 +16,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -29,19 +30,21 @@ public class PsychologicalSupportService {
     private ChatClient chatClient;
 
     @Autowired
-    private ChatMemory chatMemory;
-
-    @Autowired
     private ConsultationSessionService consultationSessionService;
 
     @Autowired
     private ConsultationMessageService consultationMessageService;
 
+    @Value("${chat.history.max-messages:20}")
+    private int maxHistoryMessages;
+
     public StructOutPut.StreamChatSession startSession(Long userId, ConsultationSessionCreateDTO consultationSessionCreateDTO) {
         //创建数据库会话记录
         ConsultationSession consultationSession = consultationSessionService.createSession(userId, consultationSessionCreateDTO);
         //将初始用户消息保存到Message表
-        ConsultationMessage userMessage = consultationMessageService.saveUserMessage(consultationSession.getId(), consultationSessionCreateDTO.getInitialMessage(), null);
+        consultationMessageService.saveUserMessage(consultationSession.getId(),
+                consultationSessionCreateDTO.getInitialMessage(), null);
+        
         Long sessionId = consultationSession.getId();
         return new StructOutPut.StreamChatSession(
                 sessionId,
@@ -58,7 +61,7 @@ public class PsychologicalSupportService {
         return Flux.create(sink -> {
             //先校验归属
             try {
-                ConsultationSession consultationSession = consultationSessionService.assertSessionOwner(sessionId, userId);
+                consultationSessionService.assertSessionOwner(sessionId, userId);
             } catch (BusinessException e) {
                 sink.error(e);
                 return;
@@ -78,20 +81,20 @@ public class PsychologicalSupportService {
                 consultationMessageService.saveUserMessage(sessionId, userMessage, null);
             }
             //进行流式对话
-            String conversationId = String.valueOf(sessionId);
-            //构建系统提示词
-            List<Message> userMessages = new ArrayList<>();
-            userMessages.add(new UserMessage(userMessage));
-            chatMemory.add(conversationId, userMessages);
-            Prompt prompt = new Prompt(List.of(
-                    new SystemMessage(PromptManage.PSYCHOLOGICAL_SUPPORT_SYSTEM_PROMPT)
-            ));
             //用于存储ai完整响应
             StringBuilder fullResponse = new StringBuilder();
+
+            List<Message> historyMessages = new ArrayList<>();
+            for(ConsultationMessage message : consultationMessageService.getRecentMessages(sessionId, maxHistoryMessages)){
+                historyMessages.add(SenderType.USER.getCode().equals(message.getSenderType())
+                        ? new UserMessage(message.getContent())
+                        : new AssistantMessage(message.getContent()));
+            }
+
             //使用ChatClient发送消息到模型
-            chatClient.prompt(prompt)
-                    .messages(userMessages)
-                    .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId))
+            chatClient.prompt()
+                    .system(PromptManage.PSYCHOLOGICAL_SUPPORT_SYSTEM_PROMPT)
+                    .messages(historyMessages)
                     .stream()
                     .content()
                     .doOnNext(Fragment -> {
@@ -104,7 +107,6 @@ public class PsychologicalSupportService {
                         //添加ai回复到对话记忆
                         List<Message> aiMessages = new ArrayList<>();
                         aiMessages.add(new AssistantMessage(fullResponse.toString()));
-                        chatMemory.add(conversationId, aiMessages);
                         sink.complete();
                     })
                     .doOnError(error -> {
