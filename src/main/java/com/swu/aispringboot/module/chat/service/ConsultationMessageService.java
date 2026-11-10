@@ -1,6 +1,8 @@
 package com.swu.aispringboot.module.chat.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.swu.aispringboot.module.chat.enums.MessageType;
+import com.swu.aispringboot.module.chat.enums.SenderType;
 import com.swu.aispringboot.module.chat.dto.ConsultationMessageResponseDTO;
 import com.swu.aispringboot.module.chat.entity.ConsultationMessage;
 import com.swu.aispringboot.module.chat.mapper.ConsultationMessageMapper;
@@ -18,8 +20,8 @@ public class ConsultationMessageService {
         //构建用户消息实体
         ConsultationMessage userMessage = ConsultationMessage.builder()
                 .sessionId(sessionId)
-                .senderType(1)
-                .messageType(1)
+                .senderType(SenderType.USER.getCode())
+                .messageType(MessageType.TEXT.getCode())
                 .content(content)
                 .emotionTag(emotion_tag)
                 .createdAt(LocalDateTime.now())
@@ -32,8 +34,8 @@ public class ConsultationMessageService {
         //构建AI消息实体
         ConsultationMessage aiMessage = ConsultationMessage.builder()
                 .sessionId(sessionId)
-                .senderType(2)
-                .messageType(2)
+                .senderType(SenderType.AI.getCode())
+                .messageType(MessageType.TEXT.getCode())
                 .content(content)
                 .aiModel(aiModel)
                 .createdAt(LocalDateTime.now())

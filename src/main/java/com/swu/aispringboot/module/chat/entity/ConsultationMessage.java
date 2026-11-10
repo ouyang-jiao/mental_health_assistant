@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.swu.aispringboot.module.chat.enums.MessageType;
+import com.swu.aispringboot.module.chat.enums.SenderType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -48,20 +50,15 @@ public class ConsultationMessage   {
         if (senderType == null) {
             return "未知";
         }
-        return switch (senderType) {
-            case 0 -> "用户";
-            case 1 -> "AI";
-            default -> "未知";
-        };
+        SenderType st = SenderType.fromCode(senderType);
+        return st == null ? "未知" : st.getDesc();
     }
 
     public String  getMessageTypeDesc() {
         if (messageType == null) {
             return "未知";
         }
-        return switch (messageType) {
-            case 0 -> "文本";
-            default -> "未知";
-        };
+        MessageType mt = MessageType.fromCode(messageType);
+        return mt == null ? "未知" : mt.getDesc();
     }
 }
