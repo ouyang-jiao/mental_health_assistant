@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class ConsultationMessageService {
@@ -75,5 +78,16 @@ public class ConsultationMessageService {
                 .build();
         dto.calculateContentLength();
         return dto;
+    }
+
+    public List<ConsultationMessage> getRecentMessages(Long sessionId, int limit) {
+        LambdaQueryWrapper<ConsultationMessage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ConsultationMessage::getSessionId, sessionId)
+                .orderByDesc(ConsultationMessage::getId)
+                .last("limit " + limit);
+        List<ConsultationMessage> messages = consultationMessageMapper.selectList(queryWrapper);
+        //反转消息列表，确保最新消息在最前面
+        Collections.reverse(messages);
+        return messages;
     }
 }
