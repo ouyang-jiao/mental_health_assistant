@@ -8,21 +8,22 @@ import com.swu.aispringboot.module.chat.dto.ConsultationMessageResponseDTO;
 import com.swu.aispringboot.module.chat.entity.ConsultationMessage;
 import com.swu.aispringboot.module.chat.entity.ConsultationSession;
 import com.swu.aispringboot.module.chat.enums.SenderType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SignalType;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class PsychologicalSupportService {
     @Autowired
@@ -62,7 +63,7 @@ public class PsychologicalSupportService {
     public Flux<String> streamPsychologicalChat(Long userId, Long sessionId, String userMessage) {
         //创建响应流
         return Flux.create(sink -> {
-            //先校验归属
+            //先校验归属关系
             try {
                 consultationSessionService.assertSessionOwner(sessionId, userId);
             } catch (BusinessException e) {
@@ -100,20 +101,22 @@ public class PsychologicalSupportService {
                     .messages(historyMessages)
                     .stream()
                     .content()
-                    .doOnNext(Fragment -> {
-                        fullResponse.append(Fragment);
-                        sink.next(Fragment);
+                    .doOnNext(fragment -> {
+                        fullResponse.append(fragment);
+                        sink.next(fragment);
                     })
-                    .doOnComplete(() -> {
-                        //将AI返回的内容保存到数据库
-                        consultationMessageService.saveAiMessage(sessionId, fullResponse.toString(), "open-ai");
-                        //添加ai回复到对话记忆
-                        List<Message> aiMessages = new ArrayList<>();
-                        aiMessages.add(new AssistantMessage(fullResponse.toString()));
-                        sink.complete();
-                    })
-                    .doOnError(error -> {
-                            sink.error(error);
+                    .doOnError(sink::error)
+                    .doFinally(signalType -> {
+                        if(!fullResponse.isEmpty()){
+                            try{
+                                consultationMessageService.saveAiMessage(sessionId, fullResponse.toString(), "open-ai");
+                            }catch (Exception e){
+                                log.error("保存AI回复到数据库失败, sessionId: {}", sessionId, e);
+                            }
+                        }
+                        if(signalType == SignalType.ON_COMPLETE){
+                            sink.complete();
+                        }
                     })
                     .subscribe();//订阅并启动流
 
