@@ -40,7 +40,7 @@ public class ConsultationSessionService {
             consultationSessionMapper.insert(consultationSession);
             return consultationSession;
         }
-        return null;
+        throw new BusinessException("用户不存在");
     }
 
     //归属校验

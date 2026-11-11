@@ -147,7 +147,7 @@ public class JwtTokenUtil implements ApplicationContextAware {
     public static Long getUserIdFromToken() {
         String token = getCurrentToken();
         if(token == null || token.isBlank()) {
-            throw new RuntimeException("token不存在，请重新登录");
+            return null;
         }
         DecodedJWT decodedJWT = verifyToken(token);
         return decodedJWT.getClaim("userId").asLong();
